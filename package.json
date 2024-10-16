@@ -11,21 +11,18 @@
     "jpush",
     "expo",
     "config",
-    "react-native"
+    "react-native",
+    "muxi-studio"
   ],
   "files": [
     "index.js",
     "app.plugin.js"
   ],
   "author": {
-    "name": "RunoMeow",
+    "name": "MuxiStudio",
     "url": "https://github.com/RunoMeow"
   },
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/RunoMeow/jpush-expo-config-plugin/issues"
-  },
-  "homepage": "https://github.com/RunoMeow/jpush-expo-config-plugin#readme",
   "dependencies": {
     "@expo/config-plugins": "^3.0.3"
   }
