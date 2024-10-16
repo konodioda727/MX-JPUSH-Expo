@@ -1,11 +1,11 @@
 {
   "name": "jpush-expo-config-plugin",
-  "version": "0.0.6",
+  "version": "0.0.1",
   "description": "An expo config plugin for jpush",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RunoMeow/jpush-expo-config-plugin.git"
+    "url": "https://github.com/konodioda727/MX-JPUSH-Expo"
   },
   "keywords": [
     "jpush",
@@ -20,7 +20,7 @@
   ],
   "author": {
     "name": "MuxiStudio",
-    "url": "https://github.com/RunoMeow"
+    "url": "https://github.com/konodioda727"
   },
   "license": "MIT",
   "dependencies": {
