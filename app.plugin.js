@@ -104,6 +104,18 @@ const setAppDelegate = (config) =>
         /appKey\:\@\"(.*)\" channel\:\@\"(.*)\" /,
         `appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" `
       );
+      if (config.modResults.contents.indexOf('return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];') > -1) {
+        config.modResults.contents = config.modResults.contents.replace('return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];', '[JPUSHService registerDeviceToken:deviceToken];')
+      }
+      if (config.modResults.contents.indexOf('return [super application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];') > -1) {
+        config.modResults.contents = config.modResults.contents.replace('return [super application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];', `
+        // iOS 10 以下 Required
+        NSLog(@"iOS 7 APNS");
+        [JPUSHService handleRemoteNotification:userInfo];
+        [[NSNotificationCenter defaultCenter] postNotificationName:J_APNS_NOTIFICATION_ARRIVED_EVENT object:userInfo];
+        completionHandler(UIBackgroundFetchResultNewData);
+        `)
+      }
     }
     if (
       config.modResults.contents.indexOf(
@@ -115,26 +127,40 @@ const setAppDelegate = (config) =>
         /\@end([\n]*)$/,
         `//************************************************JPush start************************************************
 
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
-  [JPUSHService registerDeviceToken:deviceToken];
-}
-
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
-  [super application:application didFailToRegisterForRemoteNotificationsWithError:error];
-}
-
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
-  [JPUSHService handleRemoteNotification:userInfo];
-  [[NSNotificationCenter defaultCenter] postNotificationName:J_APNS_NOTIFICATION_ARRIVED_EVENT object:userInfo];
-  completionHandler(UIBackgroundFetchResultNewData);
-}
-
 // iOS 10 及以上版本的通知处理
 - (void)jpushNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(NSInteger))completionHandler {
+  NSDictionary * userInfo = notification.request.content.userInfo;
+  if([notification.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
+    // Apns
+    NSLog(@"iOS 10 APNS 前台收到消息");
+    [JPUSHService handleRemoteNotification:userInfo];
+    [[NSNotificationCenter defaultCenter] postNotificationName:J_APNS_NOTIFICATION_ARRIVED_EVENT object:userInfo];
+  }
+  else {
+    // 本地通知 todo
+    NSLog(@"iOS 10 本地通知 前台收到消息");
+    [[NSNotificationCenter defaultCenter] postNotificationName:J_LOCAL_NOTIFICATION_ARRIVED_EVENT object:userInfo];
+  }
   completionHandler(UNNotificationPresentationOptionAlert);
 }
 
 - (void)jpushNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler {
+  NSDictionary * userInfo = response.notification.request.content.userInfo;
+  if([response.notification.request.trigger isKindOfClass:[UNPushNotificationTrigger class]]) {
+    // Apns
+    NSLog(@"iOS 10 APNS 消息事件回调");
+    [JPUSHService handleRemoteNotification:userInfo];
+    // 保障应用被杀死状态下，用户点击推送消息，打开app后可以收到点击通知事件
+    [[RCTJPushEventQueue sharedInstance]._notificationQueue insertObject:userInfo atIndex:0];
+    [[NSNotificationCenter defaultCenter] postNotificationName:J_APNS_NOTIFICATION_OPENED_EVENT object:userInfo];
+  }
+  else {
+    // 本地通知
+    NSLog(@"iOS 10 本地通知 消息事件回调");
+    // 保障应用被杀死状态下，用户点击推送消息，打开app后可以收到点击通知事件
+    [[RCTJPushEventQueue sharedInstance]._localNotificationQueue insertObject:userInfo atIndex:0];
+    [[NSNotificationCenter defaultCenter] postNotificationName:J_LOCAL_NOTIFICATION_OPENED_EVENT object:userInfo];
+  }
   completionHandler();
 }
 
