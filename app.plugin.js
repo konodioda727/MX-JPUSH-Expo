@@ -4,6 +4,7 @@ const {
   withSettingsGradle,
   withAndroidManifest,
   withAppDelegate,
+  withXcodeProject
 } = require('@expo/config-plugins');
 
 let JPUSH_APPKEY = 'appKey',
@@ -14,12 +15,39 @@ const withJPush = (config, props) => {
     throw new Error('[MX_JPush_Expo] 请传入参数 appKey & channel');
   JPUSH_APPKEY = props.appKey;
   JPUSH_CHANNEL = props.channel;
+  config = setInterface(config);
   config = setAppDelegate(config);
   config = setAndroidManifest(config);
   config = setAppBuildGradle(config);
   config = setSettingsGradle(config);
+  config = setPodfilePostInstall(config);
   return config;
 };
+const setPodfilePostInstall = (config) =>
+  withXcodeProject(config, (config) => {
+    const postInstallScript = `
+      installer.pods_project.build_configurations.each do |config|
+        config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"
+      end
+    `
+    const installScript = 'post_install do |installer|';
+    const { contents } = config.modResults;
+    const installIndex = contents.indexOf(installScript);
+
+    if (installIndex === -1 && contents.indexOf('config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"') === -1) {
+      // 如果没有 post_install 且没有 arm64 忽略脚本，则插入
+      config.modResults.contents += `
+        ${installScript}
+        ${postInstallScript}
+      `;
+    } else if (installIndex !== -1 && contents.indexOf('config.build_settings["EXCLUDED_ARCHS[sdk=iphonesimulator*]"] = "arm64"') === -1) {
+      // 如果有 post_install 但没有 arm64 忽略脚本，则在 post_install 后插入
+      config.modResults.contents = contents.slice(0, installIndex + installScript.length) + postInstallScript + contents.slice(installIndex + installScript.length);
+    } else {
+      console.log("[MX_JPush_Expo] post_install 脚本已经存在，跳过添加.");
+    }
+    return config;
+  });
 const setInterface = (config) => {
   withAppDelegate(config, (config) => {
     const implementationIndex = config.modResults.contents.indexOf('@implementation AppDelegate');

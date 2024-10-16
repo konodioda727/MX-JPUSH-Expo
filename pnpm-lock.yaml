@@ -9,8 +9,8 @@ dependencies:
     specifier: ^3.0.3
     version: 3.1.0
   mx-jpush-expo:
-    specifier: ^0.0.1
-    version: 0.0.1
+    specifier: ^0.0.2
+    version: 0.0.2
 
 packages:
 
@@ -311,6 +311,15 @@ packages:
     resolution: {integrity: sha512-kNawVR4BFywFclePSC+9TlTdX6zNL5z3J7Ki/byECayVhXoBU77qBLxQCVb/OabDc6xHcXdgc14rC9I5wYFiig==}
     dependencies:
       '@expo/config-plugins': 3.1.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
+  /mx-jpush-expo@0.0.2:
+    resolution: {integrity: sha512-3DGkLYeWbqDyRHvAqqWOKX9gSgToZ7iReyyVREiDHrAhdtt40/Twbhl/Yxz33iybzRfPLRLckMTZZSBV84l43Q==}
+    dependencies:
+      '@expo/config-plugins': 3.1.0
+      mx-jpush-expo: 0.0.1
     transitivePeerDependencies:
       - supports-color
     dev: false
